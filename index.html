@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Countdown Timer</title>
-  <!-- Tautkan file manifest -->
+  <title>Countdown Timer PWA</title>
+  <!-- Tautkan file manifest untuk PWA -->
   <link rel="manifest" href="manifest.json">
-  <!-- Set warna tema untuk browser (misalnya di Android) -->
+  <!-- Meta tag untuk tema warna -->
   <meta name="theme-color" content="#1a73e8">
+  <!-- Sertakan moment.js untuk format tanggal/waktu -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
   <style>
     body {
@@ -84,15 +85,15 @@
       });
     }
 
-    let countdown;
+    let timerAnimationFrame;
     const timerDisplay = document.getElementById('timer');
     const infoDisplay = document.getElementById('info');
     const targetInput = document.getElementById('targetDate');
 
-    // Set minimal input datetime ke waktu sekarang
+    // Set nilai minimal untuk input datetime ke waktu saat ini
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    targetInput.min = now.toISOString().slice(0,16);
+    targetInput.min = now.toISOString().slice(0, 16);
 
     // Cek localStorage saat halaman dimuat
     window.onload = function() {
@@ -104,11 +105,13 @@
     };
 
     function startTimer() {
-      // Clear existing countdown
-      clearInterval(countdown);
+      // Batalkan request frame yang sedang berjalan jika ada
+      if (timerAnimationFrame) {
+        cancelAnimationFrame(timerAnimationFrame);
+      }
 
       const targetDate = new Date(targetInput.value).getTime();
-      const now = new Date().getTime();
+      const now = Date.now();
 
       if (targetDate <= now) {
         alert('Pilih waktu di masa depan!');
@@ -118,33 +121,40 @@
       // Simpan target date ke localStorage
       localStorage.setItem('targetDate', targetInput.value);
 
-      countdown = setInterval(() => {
-        const now = new Date().getTime();
-        const distance = targetDate - now;
+      function updateTimer() {
+        const now = Date.now();
+        let distance = targetDate - now;
 
-        if (distance < 0) {
-          clearInterval(countdown);
+        if (distance <= 0) {
           timerDisplay.innerHTML = "SELESAI!";
           localStorage.removeItem('targetDate');
           return;
         }
 
-        // Hitung jam, menit, dan detik
+        // Perhitungan dengan akurasi milidetik
         const hours = Math.floor(distance / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-        // Format display
+        // Tampilkan dalam format jam:menit:detik
         timerDisplay.innerHTML = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-        // Update info
+        // Perbarui informasi target waktu menggunakan moment.js (opsional)
         const targetMoment = moment(targetDate);
         infoDisplay.innerHTML = `Target: ${targetMoment.format('DD MMMM YYYY, HH:mm')}`;
-      }, 1000);
+
+        // Meminta frame berikutnya untuk update
+        timerAnimationFrame = requestAnimationFrame(updateTimer);
+      }
+
+      // Mulai update timer
+      timerAnimationFrame = requestAnimationFrame(updateTimer);
     }
 
     function resetTimer() {
-      clearInterval(countdown);
+      if (timerAnimationFrame) {
+        cancelAnimationFrame(timerAnimationFrame);
+      }
       localStorage.removeItem('targetDate');
       timerDisplay.innerHTML = "00:00:00";
       targetInput.value = '';
