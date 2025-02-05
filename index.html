@@ -4,11 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Countdown Timer</title>
+    
+    <!-- PWA Meta Tags yang wajib -->
     <meta name="theme-color" content="#1a73e8"/>
-    <link rel="manifest" href="#manifest">
+    <meta name="description" content="Simple countdown timer app"/>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Timer">
+    
     <link rel="apple-touch-icon" href="/api/placeholder/192/192">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <!-- Inline manifest sebagai data URL -->
+    <link rel="manifest" href='data:application/manifest+json,{
+        "name": "Countdown Timer",
+        "short_name": "Timer",
+        "start_url": "./",
+        "scope": "./",
+        "display": "standalone",
+        "background_color": "#f0f2f5",
+        "theme_color": "#1a73e8",
+        "description": "Simple countdown timer app",
+        "icons": [
+            {
+                "src": "/api/placeholder/192/192",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "/api/placeholder/512/512",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ]
+    }'>
+
     <style>
+        /* CSS tetap sama seperti sebelumnya */
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -93,59 +127,47 @@
     </div>
 
     <script>
-        // Manifest content sebagai blob URL
-        const manifestContent = {
-            "name": "Countdown Timer",
-            "short_name": "Timer",
-            "start_url": ".",
-            "display": "standalone",
-            "background_color": "#f0f2f5",
-            "theme_color": "#1a73e8",
-            "description": "Simple countdown timer app",
-            "icons": [{
-                "src": "/api/placeholder/192/192",
-                "sizes": "192x192",
-                "type": "image/png"
-            }, {
-                "src": "/api/placeholder/512/512",
-                "sizes": "512x512",
-                "type": "image/png"
-            }]
-        };
-
-        const manifestBlob = new Blob([JSON.stringify(manifestContent)], {type: 'application/json'});
-        const manifestURL = URL.createObjectURL(manifestBlob);
-        document.querySelector('link[rel="manifest"]').href = manifestURL;
-
-        // Service Worker content sebagai blob URL
-        const swContent = `
-            const CACHE_NAME = 'countdown-timer-v1';
-            const urlsToCache = [
-                '/',
-                '/index.html',
-                'https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js'
-            ];
-
-            self.addEventListener('install', (event) => {
-                event.waitUntil(
-                    caches.open(CACHE_NAME)
-                        .then((cache) => cache.addAll(urlsToCache))
-                );
-            });
-
-            self.addEventListener('fetch', (event) => {
-                event.respondWith(
-                    caches.match(event.request)
-                        .then((response) => response || fetch(event.request))
-                );
-            });
-        `;
-
-        const swBlob = new Blob([swContent], {type: 'text/javascript'});
-        const swURL = URL.createObjectURL(swBlob);
-
-        // Register Service Worker
+        // Register Service Worker dengan inline worker
         if ('serviceWorker' in navigator) {
+            const swScript = `
+                const CACHE_NAME = 'countdown-timer-v1';
+                const urlsToCache = [
+                    './',
+                    'https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js'
+                ];
+
+                self.addEventListener('install', (event) => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME)
+                            .then((cache) => cache.addAll(urlsToCache))
+                    );
+                });
+
+                self.addEventListener('fetch', (event) => {
+                    event.respondWith(
+                        caches.match(event.request)
+                            .then((response) => response || fetch(event.request))
+                    );
+                });
+
+                self.addEventListener('activate', (event) => {
+                    event.waitUntil(
+                        caches.keys().then((cacheNames) => {
+                            return Promise.all(
+                                cacheNames.map((cacheName) => {
+                                    if (cacheName !== CACHE_NAME) {
+                                        return caches.delete(cacheName);
+                                    }
+                                })
+                            );
+                        })
+                    );
+                });
+            `;
+
+            const blob = new Blob([swScript], { type: 'text/javascript' });
+            const swURL = URL.createObjectURL(blob);
+            
             navigator.serviceWorker.register(swURL)
                 .then(registration => {
                     console.log('ServiceWorker registration successful');
@@ -155,7 +177,7 @@
                 });
         }
 
-        // Install PWA
+        // Install PWA handling
         let deferredPrompt;
         const installButton = document.getElementById('installButton');
 
@@ -177,22 +199,26 @@
             }
         });
 
+        // Timer functionality remains the same
         let countdown;
         const timerDisplay = document.getElementById('timer');
         const infoDisplay = document.getElementById('info');
         const targetInput = document.getElementById('targetDate');
 
-        // Set minimal input datetime ke waktu sekarang
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         targetInput.min = now.toISOString().slice(0,16);
 
-        // Cek localStorage saat halaman dimuat
         window.onload = function() {
             const savedTarget = localStorage.getItem('targetDate');
             if (savedTarget) {
                 targetInput.value = savedTarget;
                 startTimer();
+            }
+            
+            // Request notification permission on load
+            if ('Notification' in window) {
+                Notification.requestPermission();
             }
         };
 
@@ -243,11 +269,6 @@
             timerDisplay.innerHTML = "00:00:00";
             targetInput.value = '';
             infoDisplay.innerHTML = '';
-        }
-
-        // Request notification permission
-        if ('Notification' in window) {
-            Notification.requestPermission();
         }
     </script>
 </body>
