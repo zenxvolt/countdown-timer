@@ -136,12 +136,12 @@
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-        // Tampilkan dalam format jam:menit:detik
+        // Tampilkan dalam format jam:menit:detik (24-hour format)
         timerDisplay.innerHTML = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-        // Perbarui informasi target waktu menggunakan moment.js (opsional)
+        // Format tanggal dengan format dd/mm/yyyy dan waktu 24 jam
         const targetMoment = moment(targetDate);
-        infoDisplay.innerHTML = `Target: ${targetMoment.format('DD MMMM YYYY, HH:mm')}`;
+        infoDisplay.innerHTML = `Target: ${targetMoment.format('DD/MM/YYYY HH:mm')}`;
 
         // Meminta frame berikutnya untuk update
         timerAnimationFrame = requestAnimationFrame(updateTimer);
