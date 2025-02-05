@@ -47,6 +47,7 @@
       cursor: pointer;
       font-size: 1rem;
       transition: background-color 0.3s;
+      margin: 0 0.5rem; /* Menambahkan margin kiri dan kanan pada semua tombol */
     }
     button:hover {
       background-color: #1557b0;
@@ -55,16 +56,29 @@
       margin-top: 1rem;
       color: #666;
     }
+    .hidden {
+      display: none;
+    }
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem; /* Menambahkan jarak antar tombol */
+      margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Countdown Timer</h1>
     <div class="timer" id="timer">00:00:00</div>
-    <input type="datetime-local" id="targetDate">
-    <br>
-    <button onclick="startTimer()">Mulai Timer</button>
-    <button onclick="resetTimer()" style="background-color: #dc3545;">Reset</button>
+    <div id="inputContainer">
+      <input type="datetime-local" id="targetDate">
+      <br>
+    </div>
+    <div class="button-container">
+      <button onclick="startTimer()" id="startButton">Mulai Timer</button>
+      <button onclick="resetTimer()" style="background-color: #dc3545;">Reset</button>
+    </div>
     <p class="info" id="info"></p>
   </div>
 
@@ -85,20 +99,19 @@
     const timerDisplay = document.getElementById('timer');
     const infoDisplay = document.getElementById('info');
     const targetInput = document.getElementById('targetDate');
+    const inputContainer = document.getElementById('inputContainer');
+    const startButton = document.getElementById('startButton');
 
-    // Konfigurasi moment.js untuk format Indonesia
     moment.locale('id', {
       format: 'DD/MM/YYYY HH:mm',
       weekdays: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
       months: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
     });
 
-    // Set nilai minimal untuk input datetime ke waktu saat ini
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     targetInput.min = now.toISOString().slice(0, 16);
 
-    // Cek localStorage saat halaman dimuat
     window.onload = function() {
       const savedTarget = localStorage.getItem('targetDate');
       if (savedTarget) {
@@ -120,6 +133,9 @@
         return;
       }
 
+      inputContainer.classList.add('hidden');
+      startButton.classList.add('hidden');
+
       localStorage.setItem('targetDate', targetInput.value);
 
       function updateTimer() {
@@ -129,6 +145,8 @@
         if (distance <= 0) {
           timerDisplay.innerHTML = "SELESAI!";
           localStorage.removeItem('targetDate');
+          inputContainer.classList.remove('hidden');
+          startButton.classList.remove('hidden');
           return;
         }
 
@@ -138,7 +156,6 @@
 
         timerDisplay.innerHTML = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-        // Update target time display with dd/mm/yyyy format
         const targetMoment = moment(targetDate);
         infoDisplay.innerHTML = `Target: ${targetMoment.format('DD/MM/YYYY, HH:mm')}`;
 
@@ -156,6 +173,9 @@
       timerDisplay.innerHTML = "00:00:00";
       targetInput.value = '';
       infoDisplay.innerHTML = '';
+      
+      inputContainer.classList.remove('hidden');
+      startButton.classList.remove('hidden');
     }
   </script>
 </body>
